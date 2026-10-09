@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🌈 Unicorn Leaderboard</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:24px 14px;font-family:Arial,sans-serif;color:#382447;
+background:linear-gradient(135deg,#ffe0f1,#e7ddff,#d9f7ff,#fff1c9);min-height:100vh}
+main{max-width:850px;margin:auto}
+.hero{padding:28px;border-radius:25px;color:white;
+background:linear-gradient(110deg,#ff69b4,#a477ff,#54c9ef,#65d9b4,#ffd35a);
+background-size:300% 300%;animation:rainbow 8s infinite;position:relative}
+@keyframes rainbow{50%{background-position:100% 50%}}
+h1{font-size:clamp(28px,6vw,46px);margin:16px 0 8px}
+.unicorn{position:absolute;right:22px;top:25px;font-size:65px;animation:float 2s infinite}
+@keyframes float{50%{transform:translateY(-10px) rotate(8deg)}}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.stat,.board{background:#ffffffdd;border:2px solid white;border-radius:17px}
+.stat{padding:16px}
+.stat span{font-size:12px;color:#806b90}
+.stat strong{display:block;font-size:24px;margin-top:8px;overflow-wrap:anywhere}
+.toolbar{display:flex;gap:8px;margin:16px 0}
+input,button{padding:13px;border-radius:12px;border:1px solid #e4d5f7;font-size:14px}
+input{flex:1;min-width:0}
+button{background:#a477ff;color:white;border:0;font-weight:bold;cursor:pointer}
+.board{overflow:hidden}
+.row{display:grid;grid-template-columns:65px 1fr 90px;gap:10px;
+align-items:center;padding:15px;border-bottom:1px solid #f0e7f7}
+.heading{background:#f5eaff;font-size:11px;font-weight:bold;color:#806b90}
+.row:last-child{border-bottom:0}
+.name{overflow-wrap:anywhere;font-weight:bold}
+.count{text-align:right;font-weight:bold;color:#a05bc5}
+.top1{background:#fff5c9}.top2{background:#eaf3ff}.top3{background:#ffede3}
+.status{text-align:center;font-size:12px;color:#806b90;margin:15px}
+#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+@media(max-width:420px){.unicorn{font-size:45px;right:12px}.hero{padding:20px}
+.row{grid-template-columns:52px 1fr 65px;padding:13px 9px}.stat{padding:10px}.stat strong{font-size:19px}}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<main>
+<section class="hero">
+<div>🌈 THE MAGICAL RANKINGS CLUB</div>
+<h1>Code Name<br>Leaderboard ✨</h1>
+<div>Count your wins. Chase your dreams.</div>
+<div class="unicorn">🦄</div>
+</section>
+
+<section class="stats">
+<div class="stat"><span>🌸 Total entries</span><strong id="total">—</strong></div>
+<div class="stat"><span>🌈 Combined count</span><strong id="sum">—</strong></div>
+<div class="stat"><span>👑 Top count</span><strong id="highest">—</strong></div>
+</section>
+
+<div class="toolbar">
+<input id="search" placeholder="🔎 Search code names..." oninput="render()">
+<button onclick="loadData()">✨ Refresh</button>
+</div>
+
+<section class="board">
+<div class="row heading"><div>RANK</div><div>CODE NAME</div><div style="text-align:right">COUNT</div></div>
+<div id="results"></div>
+</section>
+<div class="status" id="status">🦄 Loading magical rankings...</div>
+<div class="status">Made of rainbows, good vibes & unicorn magic 💖</div>
+</main>
+
+<script>
+const API='YOUR_APPS_SCRIPT_URL?data=1';
+let entries=[];
+
+function escapeHTML(s){
+ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadData(){
+ document.getElementById('status').textContent='🌈 Loading rankings...';
+ try{
+   const response=await fetch(API);
+   if(!response.ok)throw new Error('HTTP '+response.status);
+   entries=await response.json();
+   document.getElementById('total').textContent=entries.length.toLocaleString();
+   document.getElementById('sum').textContent=entries.reduce((s,e)=>s+Number(e.count),0).toLocaleString();
+   document.getElementById('highest').textContent=entries.length?Number(entries[0].count).toLocaleString():'0';
+   render();
+   document.getElementById('status').textContent='✨ Updated '+new Date().toLocaleTimeString();
+ }catch(err){
+   document.getElementById('status').textContent='Could not load data. Check your Apps Script URL and deployment permissions.';
+   console.error(err);
+ }
+}
+
+function render(){
+ const q=document.getElementById('search').value.toLowerCase().trim();
+ const list=entries.filter(e=>String(e.name).toLowerCase().includes(q));
+ document.getElementById('results').innerHTML=list.length?list.map(e=>{
+   const medal=e.rank===1?'🥇':e.rank===2?'🥈':e.rank===3?'🥉':'⭐';
+   const cls=e.rank<=3?' top'+e.rank:'';
+   return `<div class="row${cls}"><div>${medal} ${e.rank}</div><div class="name">${escapeHTML(e.name)}</div><div class="count">${Number(e.count).toLocaleString()}</div></div>`;
+ }).join(''):'<div class="row">No matching code names 🌸</div>';
+}
+
+// Confetti burst whenever the page is opened.
+(function(){
+ const canvas=document.getElementById('confetti'),ctx=canvas.getContext('2d');
+ let w,h,particles=[],start;
+ function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight}
+ resize();addEventListener('resize',resize);
+ const colors=['#ff69b4','#ffd35a','#a477ff','#54c9ef','#65d9b4'];
+ for(let i=0;i<150;i++)particles.push({x:Math.random()*innerWidth,y:-Math.random()*innerHeight,
+ s:4+Math.random()*6,v:2+Math.random()*4,c:colors[i%colors.length],d:(Math.random()-.5)*2});
+ start=performance.now();
+ function frame(now){
+  ctx.clearRect(0,0,w,h);
+  particles.forEach(p=>{p.y+=p.v;p.x+=p.d;ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,p.s,p.s)});
+  if(now-start<3500)requestAnimationFrame(frame);else ctx.clearRect(0,0,w,h);
+ }
+ if(!matchMedia('(prefers-reduced-motion: reduce)').matches)requestAnimationFrame(frame);
+})();
+loadData();
+</script>
+</body>
+</html>
